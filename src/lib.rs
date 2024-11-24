@@ -30,6 +30,21 @@ macro_rules! funcs {
 }
 
 #[macro_export]
+macro_rules! funcs_vec {
+    ($name: ident, $T: ty) => {
+        paste::paste! {
+            pub fn $name(&self, idx: usize) -> $T {
+                self.$name[idx]
+            }
+            pub fn [<set_ $name>](&mut self, idx: usize, val: $T) -> &mut Self {
+                self.$name[idx] = val;
+                self
+            }
+        }
+    };
+}
+
+#[macro_export]
 #[allow(unused_macros)]
 macro_rules! lg_align {
     ($addr:expr) => {
