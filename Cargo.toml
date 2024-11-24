@@ -1,0 +1,10 @@
+[package]
+name = "dune-sys"
+version = "0.1.0"
+edition = "2021"
+description = "The  dune-sys  crate is a library that provides a safe interface to the Dune kernel. It is a wrapper around the Dune kernel's C API."
+
+[dependencies]
+libc = "0.2.164"
+nix = { version = "0.29.0", features = ["ioctl"] }
+paste = "1.0.15"
