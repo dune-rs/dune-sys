@@ -1,7 +1,5 @@
 use crate::funcs;
-use libc::c_void;
-
-pub type UintptrT = *mut c_void;
+use x86_64::{PhysAddr, VirtAddr};
 
 #[repr(C)]
 #[derive(Debug, Clone, Default)]
@@ -66,15 +64,15 @@ pub const DUNE_CFG_VCPU: u64 = 0xa8;
 #[repr(C)]
 #[derive(Debug)]
 pub struct DuneLayout {
-    phys_limit: UintptrT,
-    base_map: UintptrT,
-    base_stack: UintptrT,
+    phys_limit: PhysAddr,
+    base_map: VirtAddr,
+    base_stack: VirtAddr,
 }
 
 impl DuneLayout {
-    funcs!(phys_limit, UintptrT);
-    funcs!(base_map, UintptrT);
-    funcs!(base_stack, UintptrT);
+    funcs!(phys_limit, PhysAddr);
+    funcs!(base_map, VirtAddr);
+    funcs!(base_stack, VirtAddr);
 }
 
 pub const GPA_STACK_SIZE: u64 = 1 << 30; // 1 gigabyte
