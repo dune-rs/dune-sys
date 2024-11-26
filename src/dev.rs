@@ -62,12 +62,13 @@ impl DuneDevice {
         Ok(Self { fd: -1, idt: [IdtDescriptor::default(); IDT_ENTRIES], trap_regs: DuneTrapRegs::default() })
     }
 
-    pub fn open() -> Result<Self, Errno> {
+    pub fn open(&mut self) -> Result<(), Errno> {
         let fd = unsafe { libc::open("/dev/dune\0".as_ptr() as *const i8, libc::O_RDWR) };
         if fd < 0 {
             return Err(Errno::last());
         }
-        Self::new()
+        self.fd = fd;
+        Ok(())
     }
 
     pub fn close(&self) -> Result<i32, Errno> {
