@@ -3,7 +3,7 @@ use std::ffi::c_void;
 use crate::funcs;
 
 #[repr(C, packed)]
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct DuneTrapRegs {
     rax: u64,
     rbx: u64,
@@ -46,10 +46,16 @@ impl DuneTrapRegs {
     funcs!(rflags, u64);
 }
 
-pub type DuneTrapNotifyFunc = extern "C" fn(*mut DuneTrapRegs, *mut c_void);
+pub type DuneTrapNotifyFunc = extern "C" fn(*mut DuneTrapRegs, *mut c_void) -> !;
 
 #[no_mangle]
-extern "C" fn dummy_notify_func() { }
+extern "C" fn dummy_notify_func(regs: *mut DuneTrapRegs, args: *mut c_void) -> ! {
+    unsafe {
+        let _regs = &*regs;
+        let _args = &*args;
+        loop {}
+    }
+}
 
 #[repr(C)]
 #[derive(Debug)]
@@ -60,6 +66,28 @@ pub struct DuneTrapConfig {
     pub regs_size: u64,
     pub priv_data: *mut c_void,
     pub delay: u8,
+}
+
+impl DuneTrapConfig {
+    funcs!(trigger_rip, u64);
+    funcs!(notify_func, DuneTrapNotifyFunc);
+    funcs!(regs, *mut DuneTrapRegs);
+    funcs!(regs_size, u64);
+    funcs!(priv_data, *mut c_void);
+    funcs!(delay, u8);
+}
+
+impl Default for DuneTrapConfig {
+    fn default() -> Self {
+        DuneTrapConfig {
+            trigger_rip: 0,
+            notify_func: dummy_notify_func,
+            regs: std::ptr::null_mut(),
+            regs_size: 0,
+            priv_data: std::ptr::null_mut(),
+            delay: 0,
+        }
+    }
 }
 
 #[repr(C)]

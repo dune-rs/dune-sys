@@ -1,3 +1,5 @@
+use std::mem::offset_of;
+
 use crate::funcs;
 use x86_64::{PhysAddr, VirtAddr};
 
@@ -38,31 +40,31 @@ impl DuneConfig {
     funcs!(vcpu, u64);
 }
 
-pub const DUNE_CFG_RET: u64 = 0x00;
-pub const DUNE_CFG_RAX: u64 = 0x08;
-pub const DUNE_CFG_RBX: u64 = 0x10;
-pub const DUNE_CFG_RCX: u64 = 0x18;
-pub const DUNE_CFG_RDX: u64 = 0x20;
-pub const DUNE_CFG_RSI: u64 = 0x28;
-pub const DUNE_CFG_RDI: u64 = 0x30;
-pub const DUNE_CFG_RSP: u64 = 0x38;
-pub const DUNE_CFG_RBP: u64 = 0x40;
-pub const DUNE_CFG_R8: u64 = 0x48;
-pub const DUNE_CFG_R9: u64 = 0x50;
-pub const DUNE_CFG_R10: u64 = 0x58;
-pub const DUNE_CFG_R11: u64 = 0x60;
-pub const DUNE_CFG_R12: u64 = 0x68;
-pub const DUNE_CFG_R13: u64 = 0x70;
-pub const DUNE_CFG_R14: u64 = 0x78;
-pub const DUNE_CFG_R15: u64 = 0x80;
-pub const DUNE_CFG_RIP: u64 = 0x88;
-pub const DUNE_CFG_RFLAGS: u64 = 0x90;
-pub const DUNE_CFG_CR3: u64 = 0x98;
-pub const DUNE_CFG_STATUS: u64 = 0xa0;
-pub const DUNE_CFG_VCPU: u64 = 0xa8;
+pub const DUNE_CFG_RET: usize = offset_of!(DuneConfig, ret);
+pub const DUNE_CFG_RAX: usize = offset_of!(DuneConfig, rax);
+pub const DUNE_CFG_RBX: usize = offset_of!(DuneConfig, rbx);
+pub const DUNE_CFG_RCX: usize = offset_of!(DuneConfig, rcx);
+pub const DUNE_CFG_RDX: usize = offset_of!(DuneConfig, rdx);
+pub const DUNE_CFG_RSI: usize = offset_of!(DuneConfig, rsi);
+pub const DUNE_CFG_RDI: usize = offset_of!(DuneConfig, rdi);
+pub const DUNE_CFG_RSP: usize = offset_of!(DuneConfig, rsp);
+pub const DUNE_CFG_RBP: usize = offset_of!(DuneConfig, rbp);
+pub const DUNE_CFG_R8: usize = offset_of!(DuneConfig, r8);
+pub const DUNE_CFG_R9: usize = offset_of!(DuneConfig, r9);
+pub const DUNE_CFG_R10: usize = offset_of!(DuneConfig, r10);
+pub const DUNE_CFG_R11: usize = offset_of!(DuneConfig, r11);
+pub const DUNE_CFG_R12: usize = offset_of!(DuneConfig, r12);
+pub const DUNE_CFG_R13: usize = offset_of!(DuneConfig, r13);
+pub const DUNE_CFG_R14: usize = offset_of!(DuneConfig, r14);
+pub const DUNE_CFG_R15: usize = offset_of!(DuneConfig, r15);
+pub const DUNE_CFG_RIP: usize = offset_of!(DuneConfig, rip);
+pub const DUNE_CFG_RFLAGS: usize = offset_of!(DuneConfig, rflags);
+pub const DUNE_CFG_CR3: usize = offset_of!(DuneConfig, cr3);
+pub const DUNE_CFG_STATUS: usize = offset_of!(DuneConfig, status);
+pub const DUNE_CFG_VCPU: usize = offset_of!(DuneConfig, vcpu);
 
 #[repr(C)]
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct DuneLayout {
     phys_limit: PhysAddr,
     base_map: VirtAddr,
@@ -73,6 +75,25 @@ impl DuneLayout {
     funcs!(phys_limit, PhysAddr);
     funcs!(base_map, VirtAddr);
     funcs!(base_stack, VirtAddr);
+
+    #[allow(dead_code)]
+    fn new(phys_limit: PhysAddr, base_map: VirtAddr, base_stack: VirtAddr) -> Self {
+        Self {
+            phys_limit,
+            base_map,
+            base_stack,
+        }
+    }
+}
+
+impl Default for DuneLayout {
+    fn default() -> Self {
+        Self {
+            phys_limit: PhysAddr::new(0),
+            base_map: VirtAddr::new(0),
+            base_stack: VirtAddr::new(0),
+        }
+    }
 }
 
 pub const GPA_STACK_SIZE: u64 = 1 << 30; // 1 gigabyte

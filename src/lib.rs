@@ -6,11 +6,14 @@ pub mod debug;
 pub mod dune;
 #[macro_use]
 pub mod dev;
+#[macro_use]
+pub mod idt;
 
 pub use crate::trap::*;
 pub use crate::debug::*;
 pub use crate::dune::*;
 pub use crate::dev::*;
+pub use crate::idt::*;
 
 /// Generate set/get methods for a given struct field and type
 
