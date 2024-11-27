@@ -11,6 +11,7 @@ use crate::funcs;
 use crate::DuneTrapRegs;
 use crate::IdtDescriptor;
 use crate::IDT_ENTRIES;
+use crate::Result;
 
 /*
  * IOCTL interface
@@ -32,73 +33,118 @@ ioctl_read!(dune_get_layout, DUNE_IOC_MAGIC, DUNE_IOC_GET_LAYOUT, DuneLayout);
 ioctl_readwrite!(dune_trap_enable, DUNE_IOC_MAGIC, DUNE_IOC_TRAP_ENABLE, DuneTrapConfig);
 ioctl_none!(dune_trap_disable, DUNE_IOC_MAGIC, DUNE_IOC_TRAP_DISABLE);
 
-#[derive(Debug)]
-pub enum DuneErrorCode {
-    IoctlError(Errno),
-    OpenError(Errno),
-    CloseError(Errno),
+pub trait Device {
+    fn fd(&self) -> c_int;
+    fn open(&mut self, path: &str) -> Result<i32>;
+    fn close(&self) -> Result<i32>;
+    fn ioctl<T>(&self, request: u64, arg: *mut T) -> Result<i32>;
 }
 
 #[derive(Debug, Copy, Clone)]
-pub struct DuneDevice {
+pub struct BaseDevice {
     fd: c_int,
-    idt: [IdtDescriptor; IDT_ENTRIES],
-    trap_regs: DuneTrapRegs,
 }
 
-impl DuneDevice {
-
+impl BaseDevice {
     funcs!(fd, c_int);
 
-    pub fn get_idt_mut<'a>(&mut self) -> &mut [IdtDescriptor; IDT_ENTRIES] {
-        &mut self.idt
+    pub fn new() -> Self {
+        Self { fd: -1 }
+    }
+}
+
+impl Device for BaseDevice {
+
+    fn fd(&self) -> c_int {
+        self.fd
     }
 
-    pub fn get_trap_regs_mut<'a>(&mut self) -> &mut DuneTrapRegs {
-        &mut self.trap_regs
-    }
-
-    pub fn new() -> Result<Self, Errno> {
-        Ok(Self { fd: -1, idt: [IdtDescriptor::default(); IDT_ENTRIES], trap_regs: DuneTrapRegs::default() })
-    }
-
-    pub fn open(&mut self) -> Result<(), Errno> {
-        let fd = unsafe { libc::open("/dev/dune\0".as_ptr() as *const i8, libc::O_RDWR) };
+    fn open(&mut self, path: &str) -> Result<i32> {
+        let fd = unsafe { libc::open(path.as_ptr() as *const i8, libc::O_RDWR) };
         if fd < 0 {
-            return Err(Errno::last());
+            return Err(crate::Error::LibcError(Errno::last()));
         }
         self.fd = fd;
-        Ok(())
+        Ok(fd)
     }
 
-    pub fn close(&self) -> Result<i32, Errno> {
+    fn close(&self) -> Result<i32> {
         unsafe {
             let ret = libc::close(self.fd);
             if ret < 0 {
-                return Err(Errno::last());
+                return Err(crate::Error::LibcError(Errno::last()));
             }
         }
         Ok(0)
     }
 
-    pub fn enter(&self, config: &mut DuneConfig) -> Result<i32, Errno> {
+    fn ioctl<T>(&self, request: u64, arg: *mut T) -> Result<i32> {
         unsafe {
-            dune_enter(self.fd, config)
+            let ret = libc::ioctl(self.fd, request, arg);
+            if ret < 0 {
+                return Err(crate::Error::LibcError(Errno::last()));
+            }
         }
+        Ok(0)
     }
+}
 
-    pub fn get_syscall(&self) -> Result<i32, Errno> {
-        unsafe {
-            dune_get_syscall(self.fd)
-        }
-    }
+#[allow(dead_code)]
+pub trait WithInterrupt {
+    fn get_idt_mut<'a>(&mut self) -> &mut [IdtDescriptor; IDT_ENTRIES];
+    fn get_trap_regs_mut<'a>(&mut self) -> &mut DuneTrapRegs;
+}
 
-    pub fn get_layout(&self, layout: &mut DuneLayout) -> Result<i32, Errno> {
-        unsafe {
-            dune_get_layout(self.fd, layout)
+#[derive(Debug, Copy, Clone)]
+pub struct BaseSystem {
+    device: BaseDevice,
+    #[allow(dead_code)]
+    idt: [IdtDescriptor; IDT_ENTRIES],
+    #[allow(dead_code)]
+    trap_regs: DuneTrapRegs,
+}
+
+impl BaseSystem {
+
+    pub fn new() -> Self {
+        Self {
+            device: BaseDevice::new(),
+            idt: [IdtDescriptor::default(); IDT_ENTRIES],
+            trap_regs: DuneTrapRegs::default(),
         }
     }
 }
+
+impl WithInterrupt for BaseSystem {
+
+    fn get_idt_mut<'a>(&mut self) -> &mut [IdtDescriptor; IDT_ENTRIES] {
+        &mut self.idt
+    }
+
+    fn get_trap_regs_mut<'a>(&mut self) -> &mut DuneTrapRegs {
+        &mut self.trap_regs
+    }
+}
+
+impl Device for BaseSystem {
+
+    fn fd(&self) -> c_int {
+        self.device.fd()
+    }
+
+    fn open(&mut self, path: &str) -> Result<i32> {
+        self.device.open(path)
+    }
+
+    fn close(&self) -> Result<i32> {
+        self.device.close()
+    }
+
+    fn ioctl<T>(&self, request: u64, arg: *mut T) -> Result<i32> {
+        self.device.ioctl(request, arg)
+    }
+}
+
 // The following constants and ioctl definitions are already included in the code above
 // so there's no need to redefine them here.
 

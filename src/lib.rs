@@ -1,3 +1,4 @@
+pub mod result;
 #[macro_use]
 pub mod trap;
 #[macro_use]
@@ -8,12 +9,16 @@ pub mod dune;
 pub mod dev;
 #[macro_use]
 pub mod idt;
+#[macro_use]
+pub mod tss;
 
+pub use crate::result::*;
 pub use crate::trap::*;
 pub use crate::debug::*;
 pub use crate::dune::*;
 pub use crate::dev::*;
 pub use crate::idt::*;
+pub use crate::tss::*;
 
 /// Generate set/get methods for a given struct field and type
 
@@ -23,6 +28,21 @@ macro_rules! funcs {
         paste::paste! {
             pub fn [<$name>](&self) -> $T {
                 self.$name
+            }
+            pub fn [<set_ $name>](&mut self, value: $T) -> &mut Self {
+                self.$name = value;
+                self
+            }
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! funcs_ref {
+    ($name: ident, $T: ty) => {
+        paste::paste! {
+            pub fn $name(&self) -> &$T {
+                &self.$name
             }
             pub fn [<set_ $name>](&mut self, value: $T) -> &mut Self {
                 self.$name = value;
