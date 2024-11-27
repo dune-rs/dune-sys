@@ -3,6 +3,7 @@ use nix::ioctl_none;
 use nix::ioctl_read;
 use nix::ioctl_readwrite;
 use nix::errno::Errno;
+use nix::ioctl_write_ptr;
 
 use crate::dune::DuneConfig;
 use crate::dune::DuneLayout;
@@ -28,7 +29,7 @@ const DUNE_IOC_TRAP_ENABLE: u8 = 0x04;
 const DUNE_IOC_TRAP_DISABLE: u8 = 0x05;
 
 ioctl_read!(dune_enter, DUNE_IOC_MAGIC, DUNE_IOC_ENTER, DuneConfig);
-ioctl_none!(dune_get_syscall, DUNE_IOC_MAGIC,DUNE_IOC_GET_SYSCALL);
+ioctl_read!(dune_get_syscall, DUNE_IOC_MAGIC,DUNE_IOC_GET_SYSCALL, u64);
 ioctl_read!(dune_get_layout, DUNE_IOC_MAGIC, DUNE_IOC_GET_LAYOUT, DuneLayout);
 ioctl_readwrite!(dune_trap_enable, DUNE_IOC_MAGIC, DUNE_IOC_TRAP_ENABLE, DuneTrapConfig);
 ioctl_none!(dune_trap_disable, DUNE_IOC_MAGIC, DUNE_IOC_TRAP_DISABLE);
@@ -37,7 +38,7 @@ pub trait Device : Send + Sync {
     fn fd(&self) -> c_int;
     fn open(&mut self, path: &str) -> Result<i32>;
     fn close(&self) -> Result<i32>;
-    fn ioctl<T>(&self, request: u64, arg: *mut T) -> Result<i32>;
+    fn ioctl<T>(&self, request: i32, arg: *mut T) -> Result<i32>;
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -78,9 +79,9 @@ impl Device for BaseDevice {
         Ok(0)
     }
 
-    fn ioctl<T>(&self, request: u64, arg: *mut T) -> Result<i32> {
+    fn ioctl<T>(&self, request: i32, arg: *mut T) -> Result<i32> {
         unsafe {
-            let ret = libc::ioctl(self.fd, request as i32, arg);
+            let ret = libc::ioctl(self.fd, request, arg);
             if ret < 0 {
                 return Err(crate::Error::LibcError(Errno::last()));
             }
@@ -145,7 +146,7 @@ impl Device for BaseSystem {
         self.device.close()
     }
 
-    fn ioctl<T>(&self, request: u64, arg: *mut T) -> Result<i32> {
+    fn ioctl<T>(&self, request: i32, arg: *mut T) -> Result<i32> {
         self.device.ioctl(request, arg)
     }
 }
@@ -156,7 +157,7 @@ impl Device for BaseSystem {
 // pub const DUNE_MINOR: u32 = 233;
 // const DUNE_IOC_MAGIC: u8 = b'd';
 
-pub const IOCTL_DUNE_ENTER: u64 = 0x80b0e901;
+pub const IOCTL_DUNE_ENTER: u64 = 0xc0b0e901;
 pub const DUNE_ENTER: u64 = 4;
 pub const DUNE_GET_SYSCALL: u64 = 0;
 pub const DUNE_GET_LAYOUT: u64 = 1;
@@ -247,13 +248,13 @@ const VMPL_IOCTL_MAGIC: u8 = b'k';
 ioctl_none!(vmpl_create_vm, VMPL_IOCTL_MAGIC, 0x10);
 ioctl_readwrite!(vmpl_set_pgtable_vmpl, VMPL_IOCTL_MAGIC, 0x11, VmplArgs);
 ioctl_readwrite!(vmpl_set_page_vmpl, VMPL_IOCTL_MAGIC, 0x12, VmplArgs);
-ioctl_readwrite!(vmpl_create_vcpu, VMPL_IOCTL_MAGIC, 0x20, VcpuConfig);
+ioctl_write_ptr!(vmpl_create_vcpu, VMPL_IOCTL_MAGIC, 0x20, VcpuConfig);
 ioctl_readwrite!(vmpl_vmpl_run, VMPL_IOCTL_MAGIC, 0x14, DuneConfig);
 ioctl_read!(vmpl_get_ghcb, VMPL_IOCTL_MAGIC, 0x15, u64);
 ioctl_read!(vmpl_get_cr3, VMPL_IOCTL_MAGIC, 0x16, u64);
 ioctl_readwrite!(vmpl_get_pages, VMPL_IOCTL_MAGIC, 0x17, GetPages);
 ioctl_readwrite!(vmpl_set_seimi, VMPL_IOCTL_MAGIC, 0x18, u64);
-ioctl_readwrite!(vmpl_set_config, VMPL_IOCTL_MAGIC, 0x21, VcpuConfig);
+ioctl_write_ptr!(vmpl_set_config, VMPL_IOCTL_MAGIC, 0x21, VcpuConfig);
 ioctl_read!(vmpl_get_config, VMPL_IOCTL_MAGIC, 0x22, VcpuConfig);
 
 // #define VMPL_IOCTL_CREATE_VM        _IO(VMPL_IOCTL_MAGIC, 0x10)

@@ -44,4 +44,15 @@ impl IdtDescriptor {
     }
 }
 
+impl AsRef<[u8]> for IdtDescriptor {
+    fn as_ref(&self) -> &[u8] {
+        unsafe {
+            core::slice::from_raw_parts(
+                self as *const _ as *const u8,
+                core::mem::size_of::<IdtDescriptor>(),
+            )
+        }
+    }
+}
+
 pub const IDT_ENTRIES: usize = 256;
