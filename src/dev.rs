@@ -91,6 +91,7 @@ impl Device for BaseDevice {
 
 #[allow(dead_code)]
 pub trait WithInterrupt {
+    fn get_idt<'a>(&self) -> &[IdtDescriptor; IDT_ENTRIES];
     fn get_idt_mut<'a>(&mut self) -> &mut [IdtDescriptor; IDT_ENTRIES];
     fn get_trap_regs_mut<'a>(&mut self) -> &mut DuneTrapRegs;
 }
@@ -116,6 +117,10 @@ impl BaseSystem {
 }
 
 impl WithInterrupt for BaseSystem {
+
+    fn get_idt<'a>(&self) -> &[IdtDescriptor; IDT_ENTRIES] {
+        &self.idt
+    }
 
     fn get_idt_mut<'a>(&mut self) -> &mut [IdtDescriptor; IDT_ENTRIES] {
         &mut self.idt
