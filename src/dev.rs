@@ -164,3 +164,125 @@ pub const DUNE_TRAP_ENABLE: u64 = 2;
 pub const DUNE_TRAP_DISABLE: u64 = 3;
 
 pub const DUNE_SIGNAL_INTR_BASE: u64 = 200;
+#[repr(C, packed)]
+#[derive(Debug, Copy, Clone)]
+struct VmplArgs {
+    gva: u64,
+    page_size: u32,
+    attrs: u32,
+    nr_pages: u32,
+}
+
+#[allow(dead_code)]
+#[repr(C, packed)]
+#[derive(Debug, Copy, Clone)]
+struct VmsaSeg {
+    // Define the fields of VmsaSeg here
+    // For example:
+    selector: u16,
+    attrib: u16,
+    limit: u32,
+    base: u64,
+}
+
+impl VmsaSeg {
+    // Define the methods of VmsaSeg here
+    // For example:
+    fn new() -> Self {
+        Self {
+            selector: 0,
+            attrib: 0,
+            limit: 0,
+            base: 0,
+        }
+    }
+
+    funcs!(selector, u16);
+    funcs!(attrib, u16);
+    funcs!(limit, u32);
+    funcs!(base, u64);
+}
+
+#[allow(dead_code)]
+#[repr(C, packed)]
+#[derive(Debug, Copy, Clone)]
+struct VcpuConfig {
+    fs: VmsaSeg,
+    gs: VmsaSeg,
+    gdtr: VmsaSeg,
+    idtr: VmsaSeg,
+    tr: VmsaSeg,
+    lstar: u64,
+}
+
+impl VcpuConfig {
+    // Define the methods of VcpuConfig here
+    // For example:
+    fn new() -> Self {
+        Self {
+            fs: VmsaSeg::new(),
+            gs: VmsaSeg::new(),
+            gdtr: VmsaSeg::new(),
+            idtr: VmsaSeg::new(),
+            tr: VmsaSeg::new(),
+            lstar: 0,
+        }
+    }
+
+    funcs!(fs, VmsaSeg);
+    funcs!(gs, VmsaSeg);
+    funcs!(gdtr, VmsaSeg);
+    funcs!(idtr, VmsaSeg);
+    funcs!(tr, VmsaSeg);
+    funcs!(lstar, u64);
+}
+#[repr(C, packed)]
+#[derive(Debug, Copy, Clone)]
+struct GetPages {
+    num_pages: u64,
+    mapping: u64,
+    phys: u64,
+}
+
+impl GetPages {
+    fn new(num_pages: u64, mapping: u64, phys: u64) -> Self {
+        Self {
+            num_pages,
+            mapping,
+            phys,
+        }
+    }
+
+    funcs!(num_pages, u64);
+    funcs!(mapping, u64);
+    funcs!(phys, u64);
+}
+
+const VMPL_IOCTL_MAGIC: u8 = b'k';
+
+/*
+ * IOCTL interface
+ */
+ioctl_none!(vmpl_create_vm, VMPL_IOCTL_MAGIC, 0x10);
+ioctl_readwrite!(vmpl_set_pgtable_vmpl, VMPL_IOCTL_MAGIC, 0x11, VmplArgs);
+ioctl_readwrite!(vmpl_set_page_vmpl, VMPL_IOCTL_MAGIC, 0x12, VmplArgs);
+ioctl_readwrite!(vmpl_create_vcpu, VMPL_IOCTL_MAGIC, 0x20, VcpuConfig);
+ioctl_readwrite!(vmpl_vmpl_run, VMPL_IOCTL_MAGIC, 0x14, DuneConfig);
+ioctl_read!(vmpl_get_ghcb, VMPL_IOCTL_MAGIC, 0x15, u64);
+ioctl_read!(vmpl_get_cr3, VMPL_IOCTL_MAGIC, 0x16, u64);
+ioctl_readwrite!(vmpl_get_pages, VMPL_IOCTL_MAGIC, 0x17, GetPages);
+ioctl_readwrite!(vmpl_set_seimi, VMPL_IOCTL_MAGIC, 0x18, u64);
+ioctl_readwrite!(vmpl_set_config, VMPL_IOCTL_MAGIC, 0x21, VcpuConfig);
+ioctl_read!(vmpl_get_config, VMPL_IOCTL_MAGIC, 0x22, VcpuConfig);
+
+// #define VMPL_IOCTL_CREATE_VM        _IO(VMPL_IOCTL_MAGIC, 0x10)
+// #define VMPL_IOCTL_SET_PGTABLE_VMPL _IOW(VMPL_IOCTL_MAGIC, 0x11, struct vmpl_args_t)
+// #define VMPL_IOCTL_SET_PAGE_VMPL    _IOW(VMPL_IOCTL_MAGIC, 0x12, struct vmpl_args_t)
+// #define VMPL_IOCTL_CREATE_VCPU  _IOW(VMPL_IOCTL_MAGIC, 0x20, struct vcpu_config)
+// #define VMPL_IOCTL_VMPL_RUN     _IOWR(VMPL_IOCTL_MAGIC, 0x14, struct dune_config)
+// #define VMPL_IOCTL_GET_GHCB     _IOR(VMPL_IOCTL_MAGIC, 0x15, uint64_t)
+// #define VMPL_IOCTL_GET_CR3      _IOR(VMPL_IOCTL_MAGIC, 0x16, uint64_t)
+// #define VMPL_IOCTL_GET_PAGES    _IOWR(VMPL_IOCTL_MAGIC, 0x17, struct get_pages_t)
+// #define VMPL_IOCTL_SET_SEIMI    _IOW(VMPL_IOCTL_MAGIC, 0x18, uint64_t)
+// #define VMPL_IOCTL_SET_CONFIG     _IOW(VMPL_IOCTL_MAGIC, 0x21, struct vcpu_config)
+// #define VMPL_IOCTL_GET_CONFIG     _IOR(VMPL_IOCTL_MAGIC, 0x22, struct vcpu_config)
