@@ -80,7 +80,7 @@ impl Device for BaseDevice {
 
     fn ioctl<T>(&self, request: u64, arg: *mut T) -> Result<i32> {
         unsafe {
-            let ret = libc::ioctl(self.fd, request, arg);
+            let ret = libc::ioctl(self.fd, request as i32, arg);
             if ret < 0 {
                 return Err(crate::Error::LibcError(Errno::last()));
             }
