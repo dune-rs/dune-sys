@@ -33,7 +33,7 @@ ioctl_read!(dune_get_layout, DUNE_IOC_MAGIC, DUNE_IOC_GET_LAYOUT, DuneLayout);
 ioctl_readwrite!(dune_trap_enable, DUNE_IOC_MAGIC, DUNE_IOC_TRAP_ENABLE, DuneTrapConfig);
 ioctl_none!(dune_trap_disable, DUNE_IOC_MAGIC, DUNE_IOC_TRAP_DISABLE);
 
-pub trait Device {
+pub trait Device : Send + Sync {
     fn fd(&self) -> c_int;
     fn open(&mut self, path: &str) -> Result<i32>;
     fn close(&self) -> Result<i32>;
@@ -175,8 +175,8 @@ struct VmplArgs {
 
 #[allow(dead_code)]
 #[repr(C, packed)]
-#[derive(Debug, Copy, Clone)]
-struct VmsaSeg {
+#[derive(Debug, Copy, Clone, Default)]
+pub struct VmsaSeg {
     // Define the fields of VmsaSeg here
     // For example:
     selector: u16,
@@ -188,7 +188,7 @@ struct VmsaSeg {
 impl VmsaSeg {
     // Define the methods of VmsaSeg here
     // For example:
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             selector: 0,
             attrib: 0,
@@ -205,8 +205,8 @@ impl VmsaSeg {
 
 #[allow(dead_code)]
 #[repr(C, packed)]
-#[derive(Debug, Copy, Clone)]
-struct VcpuConfig {
+#[derive(Debug, Copy, Clone, Default)]
+pub struct VcpuConfig {
     fs: VmsaSeg,
     gs: VmsaSeg,
     gdtr: VmsaSeg,
@@ -216,18 +216,6 @@ struct VcpuConfig {
 }
 
 impl VcpuConfig {
-    // Define the methods of VcpuConfig here
-    // For example:
-    fn new() -> Self {
-        Self {
-            fs: VmsaSeg::new(),
-            gs: VmsaSeg::new(),
-            gdtr: VmsaSeg::new(),
-            idtr: VmsaSeg::new(),
-            tr: VmsaSeg::new(),
-            lstar: 0,
-        }
-    }
 
     funcs!(fs, VmsaSeg);
     funcs!(gs, VmsaSeg);
@@ -245,13 +233,6 @@ struct GetPages {
 }
 
 impl GetPages {
-    fn new(num_pages: u64, mapping: u64, phys: u64) -> Self {
-        Self {
-            num_pages,
-            mapping,
-            phys,
-        }
-    }
 
     funcs!(num_pages, u64);
     funcs!(mapping, u64);
