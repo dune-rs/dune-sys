@@ -7,7 +7,7 @@ use x86_64::{PhysAddr, VirtAddr};
 #[derive(Debug, Clone, Default)]
 pub struct DuneConfig {
     ret: i64,
-    rax: u64,
+    rax: i64,
     rbx: u64,
     rcx: u64,
     rdx: u64,
@@ -31,6 +31,14 @@ pub struct DuneConfig {
 }
 
 impl DuneConfig {
+    funcs!(rax, i64);
+    funcs!(rdi, u64);
+    funcs!(rsi, u64);
+    funcs!(rdx, u64);
+    funcs!(rcx, u64);
+    funcs!(r8, u64);
+    funcs!(r9, u64);
+    funcs!(r10, u64);
     funcs!(ret, i64);
     funcs!(rip, u64);
     funcs!(rsp, u64);
@@ -99,27 +107,33 @@ impl Default for DuneLayout {
 pub const GPA_STACK_SIZE: u64 = 1 << 30; // 1 gigabyte
 pub const GPA_MAP_SIZE: u64 = (1 << 36) - GPA_STACK_SIZE; // 63 gigabytes
 
+pub const DUNE_RET_NONE: i64 = 0;
 pub const DUNE_RET_EXIT: i64 = 1;
-pub const DUNE_RET_EPT_VIOLATION: i64 = 2;
+pub const DUNE_RET_SYSCALL: i64 = 2;
 pub const DUNE_RET_INTERRUPT: i64 = 3;
 pub const DUNE_RET_SIGNAL: i64 = 4;
-pub const DUNE_RET_UNHANDLED_VMEXIT: i64 = 5;
+pub const DUNE_RET_EPT_VIOLATION: i64 = 5;
 pub const DUNE_RET_NOENTER: i64 = 6;
+pub const DUNE_RET_UNHANDLED_VMEXIT: i64 = 7;
 
 pub enum DuneRetCode {
+    None = 0,
     Exit = 1,
-    EptViolation = 2,
+    Syscall = 2,
     Interrupt = 3,
     Signal = 4,
-    UnhandledVmexit = 5,
+    EptViolation = 5,
     NoEnter = 6,
-    Unknown = 7,
+    UnhandledVmexit = 7,
+    Unknown,
 }
 
 impl From<i64> for DuneRetCode {
     fn from(code: i64) -> Self {
         match code {
+            DUNE_RET_NONE => DuneRetCode::None,
             DUNE_RET_EXIT => DuneRetCode::Exit,
+            DUNE_RET_SYSCALL => DuneRetCode::Syscall,
             DUNE_RET_EPT_VIOLATION => DuneRetCode::EptViolation,
             DUNE_RET_INTERRUPT => DuneRetCode::Interrupt,
             DUNE_RET_SIGNAL => DuneRetCode::Signal,
