@@ -240,6 +240,27 @@ impl GetPages {
     funcs!(phys, u64);
 }
 
+pub const SEIMI_PGD_USER: u64 = 253;
+pub const SEIMI_PGD_SUPER: u64 = 252;
+pub const SEIMI_MMAP_BASE_USER: u64 = SEIMI_PGD_USER << 39;
+pub const SEIMI_MMAP_BASE_SUPER: u64 = SEIMI_PGD_SUPER << 39;
+
+#[repr(C, packed)]
+#[derive(Debug, Copy, Clone, Default)]
+pub struct VmplSeimi {
+    pub pgd_user: u64,
+    pub pgd_super: u64,
+}
+
+impl VmplSeimi {
+    pub fn new(pgd_user: u64, pgd_super: u64) -> Self {
+        Self { pgd_user, pgd_super }
+    }
+
+    funcs!(pgd_user, u64);
+    funcs!(pgd_super, u64);
+}
+
 const VMPL_IOCTL_MAGIC: u8 = b'k';
 
 /*
@@ -253,7 +274,7 @@ ioctl_readwrite!(vmpl_vmpl_run, VMPL_IOCTL_MAGIC, 0x14, DuneConfig);
 ioctl_read!(vmpl_get_ghcb, VMPL_IOCTL_MAGIC, 0x15, u64);
 ioctl_read!(vmpl_get_cr3, VMPL_IOCTL_MAGIC, 0x16, u64);
 ioctl_readwrite!(vmpl_get_pages, VMPL_IOCTL_MAGIC, 0x17, GetPages);
-ioctl_readwrite!(vmpl_set_seimi, VMPL_IOCTL_MAGIC, 0x18, u64);
+ioctl_readwrite!(vmpl_set_seimi, VMPL_IOCTL_MAGIC, 0x18, VmplSeimi);
 ioctl_write_ptr!(vmpl_set_config, VMPL_IOCTL_MAGIC, 0x21, VcpuConfig);
 ioctl_read!(vmpl_get_config, VMPL_IOCTL_MAGIC, 0x22, VcpuConfig);
 
