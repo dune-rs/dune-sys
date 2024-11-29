@@ -22,17 +22,15 @@ pub const DUNE_MINOR: u32 = 233;
 
 const DUNE_IOC_MAGIC: u8 = b'd';
 
-const DUNE_IOC_ENTER: u8 = 0x01;
-const DUNE_IOC_GET_SYSCALL: u8 = 0x02;
-const DUNE_IOC_GET_LAYOUT: u8 = 0x03;
-const DUNE_IOC_TRAP_ENABLE: u8 = 0x04;
-const DUNE_IOC_TRAP_DISABLE: u8 = 0x05;
+pub const IOCTL_DUNE_ENTER: u64 = 0xc0b0e901;
 
-ioctl_read!(dune_enter, DUNE_IOC_MAGIC, DUNE_IOC_ENTER, DuneConfig);
-ioctl_read!(dune_get_syscall, DUNE_IOC_MAGIC,DUNE_IOC_GET_SYSCALL, u64);
-ioctl_read!(dune_get_layout, DUNE_IOC_MAGIC, DUNE_IOC_GET_LAYOUT, DuneLayout);
-ioctl_readwrite!(dune_trap_enable, DUNE_IOC_MAGIC, DUNE_IOC_TRAP_ENABLE, DuneTrapConfig);
-ioctl_none!(dune_trap_disable, DUNE_IOC_MAGIC, DUNE_IOC_TRAP_DISABLE);
+ioctl_read!(dune_enter, DUNE_IOC_MAGIC, 0x01, DuneConfig);
+ioctl_read!(dune_get_syscall, DUNE_IOC_MAGIC,0x02, u64);
+ioctl_read!(dune_get_layout, DUNE_IOC_MAGIC, 0x03, DuneLayout);
+ioctl_readwrite!(dune_trap_enable, DUNE_IOC_MAGIC, 0x04, DuneTrapConfig);
+ioctl_none!(dune_trap_disable, DUNE_IOC_MAGIC, 0x05);
+
+pub const DUNE_SIGNAL_INTR_BASE: u64 = 200;
 
 pub trait Device : Send + Sync {
     fn fd(&self) -> c_int;
@@ -151,20 +149,6 @@ impl Device for BaseSystem {
     }
 }
 
-// The following constants and ioctl definitions are already included in the code above
-// so there's no need to redefine them here.
-
-// pub const DUNE_MINOR: u32 = 233;
-// const DUNE_IOC_MAGIC: u8 = b'd';
-
-pub const IOCTL_DUNE_ENTER: u64 = 0xc0b0e901;
-pub const DUNE_ENTER: u64 = 4;
-pub const DUNE_GET_SYSCALL: u64 = 0;
-pub const DUNE_GET_LAYOUT: u64 = 1;
-pub const DUNE_TRAP_ENABLE: u64 = 2;
-pub const DUNE_TRAP_DISABLE: u64 = 3;
-
-pub const DUNE_SIGNAL_INTR_BASE: u64 = 200;
 #[repr(C, packed)]
 #[derive(Debug, Copy, Clone)]
 struct VmplArgs {
@@ -277,15 +261,3 @@ ioctl_readwrite!(vmpl_get_pages, VMPL_IOCTL_MAGIC, 0x17, GetPages);
 ioctl_readwrite!(vmpl_set_seimi, VMPL_IOCTL_MAGIC, 0x18, VmplSeimi);
 ioctl_write_ptr!(vmpl_set_config, VMPL_IOCTL_MAGIC, 0x21, VcpuConfig);
 ioctl_read!(vmpl_get_config, VMPL_IOCTL_MAGIC, 0x22, VcpuConfig);
-
-// #define VMPL_IOCTL_CREATE_VM        _IO(VMPL_IOCTL_MAGIC, 0x10)
-// #define VMPL_IOCTL_SET_PGTABLE_VMPL _IOW(VMPL_IOCTL_MAGIC, 0x11, struct vmpl_args_t)
-// #define VMPL_IOCTL_SET_PAGE_VMPL    _IOW(VMPL_IOCTL_MAGIC, 0x12, struct vmpl_args_t)
-// #define VMPL_IOCTL_CREATE_VCPU  _IOW(VMPL_IOCTL_MAGIC, 0x20, struct vcpu_config)
-// #define VMPL_IOCTL_VMPL_RUN     _IOWR(VMPL_IOCTL_MAGIC, 0x14, struct dune_config)
-// #define VMPL_IOCTL_GET_GHCB     _IOR(VMPL_IOCTL_MAGIC, 0x15, uint64_t)
-// #define VMPL_IOCTL_GET_CR3      _IOR(VMPL_IOCTL_MAGIC, 0x16, uint64_t)
-// #define VMPL_IOCTL_GET_PAGES    _IOWR(VMPL_IOCTL_MAGIC, 0x17, struct get_pages_t)
-// #define VMPL_IOCTL_SET_SEIMI    _IOW(VMPL_IOCTL_MAGIC, 0x18, uint64_t)
-// #define VMPL_IOCTL_SET_CONFIG     _IOW(VMPL_IOCTL_MAGIC, 0x21, struct vcpu_config)
-// #define VMPL_IOCTL_GET_CONFIG     _IOR(VMPL_IOCTL_MAGIC, 0x22, struct vcpu_config)
