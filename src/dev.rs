@@ -7,6 +7,7 @@ use nix::ioctl_write_ptr;
 
 use crate::dune::DuneConfig;
 use crate::dune::DuneLayout;
+use crate::vmpl::VmplLayout;
 use crate::vmpl::VmplArgs;
 use crate::vmpl::VmplSeimi;
 use crate::vmpl::GetPages;
@@ -38,6 +39,7 @@ pub const DUNE_SIGNAL_INTR_BASE: u64 = 200;
 
 const VMPL_IOCTL_MAGIC: u8 = b'k';
 
+ioctl_read!(vmpl_get_layout, VMPL_IOCTL_MAGIC, 0x01, VmplLayout);
 ioctl_none!(vmpl_create_vm, VMPL_IOCTL_MAGIC, 0x10);
 ioctl_readwrite!(vmpl_set_pgtable_vmpl, VMPL_IOCTL_MAGIC, 0x11, VmplArgs);
 ioctl_readwrite!(vmpl_set_page_vmpl, VMPL_IOCTL_MAGIC, 0x12, VmplArgs);
