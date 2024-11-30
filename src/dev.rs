@@ -7,6 +7,10 @@ use nix::ioctl_write_ptr;
 
 use crate::dune::DuneConfig;
 use crate::dune::DuneLayout;
+use crate::vmpl::VmplArgs;
+use crate::vmpl::VmplSeimi;
+use crate::vmpl::GetPages;
+use crate::vmpl::VcpuConfig;
 use crate::debug::DuneTrapConfig;
 use crate::funcs;
 use crate::DuneTrapRegs;
@@ -31,6 +35,20 @@ ioctl_readwrite!(dune_trap_enable, DUNE_IOC_MAGIC, 0x04, DuneTrapConfig);
 ioctl_none!(dune_trap_disable, DUNE_IOC_MAGIC, 0x05);
 
 pub const DUNE_SIGNAL_INTR_BASE: u64 = 200;
+
+const VMPL_IOCTL_MAGIC: u8 = b'k';
+
+ioctl_none!(vmpl_create_vm, VMPL_IOCTL_MAGIC, 0x10);
+ioctl_readwrite!(vmpl_set_pgtable_vmpl, VMPL_IOCTL_MAGIC, 0x11, VmplArgs);
+ioctl_readwrite!(vmpl_set_page_vmpl, VMPL_IOCTL_MAGIC, 0x12, VmplArgs);
+ioctl_write_ptr!(vmpl_create_vcpu, VMPL_IOCTL_MAGIC, 0x20, VcpuConfig);
+ioctl_readwrite!(vmpl_vmpl_run, VMPL_IOCTL_MAGIC, 0x14, DuneConfig);
+ioctl_read!(vmpl_get_ghcb, VMPL_IOCTL_MAGIC, 0x15, u64);
+ioctl_read!(vmpl_get_cr3, VMPL_IOCTL_MAGIC, 0x16, u64);
+ioctl_readwrite!(vmpl_get_pages, VMPL_IOCTL_MAGIC, 0x17, GetPages);
+ioctl_readwrite!(vmpl_set_seimi, VMPL_IOCTL_MAGIC, 0x18, VmplSeimi);
+ioctl_write_ptr!(vmpl_set_config, VMPL_IOCTL_MAGIC, 0x21, VcpuConfig);
+ioctl_read!(vmpl_get_config, VMPL_IOCTL_MAGIC, 0x22, VcpuConfig);
 
 pub trait Device : Send + Sync {
     fn fd(&self) -> c_int;
@@ -148,116 +166,3 @@ impl Device for BaseSystem {
         self.device.ioctl(request, arg)
     }
 }
-
-#[repr(C, packed)]
-#[derive(Debug, Copy, Clone)]
-struct VmplArgs {
-    gva: u64,
-    page_size: u32,
-    attrs: u32,
-    nr_pages: u32,
-}
-
-#[allow(dead_code)]
-#[repr(C, packed)]
-#[derive(Debug, Copy, Clone, Default)]
-pub struct VmsaSeg {
-    // Define the fields of VmsaSeg here
-    // For example:
-    selector: u16,
-    attrib: u16,
-    limit: u32,
-    base: u64,
-}
-
-impl VmsaSeg {
-    // Define the methods of VmsaSeg here
-    // For example:
-    pub fn new() -> Self {
-        Self {
-            selector: 0,
-            attrib: 0,
-            limit: 0,
-            base: 0,
-        }
-    }
-
-    funcs!(selector, u16);
-    funcs!(attrib, u16);
-    funcs!(limit, u32);
-    funcs!(base, u64);
-}
-
-#[allow(dead_code)]
-#[repr(C, packed)]
-#[derive(Debug, Copy, Clone, Default)]
-pub struct VcpuConfig {
-    fs: VmsaSeg,
-    gs: VmsaSeg,
-    gdtr: VmsaSeg,
-    idtr: VmsaSeg,
-    tr: VmsaSeg,
-    lstar: u64,
-}
-
-impl VcpuConfig {
-
-    funcs!(fs, VmsaSeg);
-    funcs!(gs, VmsaSeg);
-    funcs!(gdtr, VmsaSeg);
-    funcs!(idtr, VmsaSeg);
-    funcs!(tr, VmsaSeg);
-    funcs!(lstar, u64);
-}
-#[repr(C, packed)]
-#[derive(Debug, Copy, Clone)]
-struct GetPages {
-    num_pages: u64,
-    mapping: u64,
-    phys: u64,
-}
-
-impl GetPages {
-
-    funcs!(num_pages, u64);
-    funcs!(mapping, u64);
-    funcs!(phys, u64);
-}
-
-pub const SEIMI_PGD_USER: u64 = 253;
-pub const SEIMI_PGD_SUPER: u64 = 252;
-pub const SEIMI_MMAP_BASE_USER: u64 = SEIMI_PGD_USER << 39;
-pub const SEIMI_MMAP_BASE_SUPER: u64 = SEIMI_PGD_SUPER << 39;
-
-#[repr(C, packed)]
-#[derive(Debug, Copy, Clone, Default)]
-pub struct VmplSeimi {
-    pub pgd_user: u64,
-    pub pgd_super: u64,
-}
-
-impl VmplSeimi {
-    pub fn new(pgd_user: u64, pgd_super: u64) -> Self {
-        Self { pgd_user, pgd_super }
-    }
-
-    funcs!(pgd_user, u64);
-    funcs!(pgd_super, u64);
-}
-
-const VMPL_IOCTL_MAGIC: u8 = b'k';
-
-/*
- * IOCTL interface
- */
-ioctl_none!(vmpl_create_vm, VMPL_IOCTL_MAGIC, 0x10);
-ioctl_readwrite!(vmpl_set_pgtable_vmpl, VMPL_IOCTL_MAGIC, 0x11, VmplArgs);
-ioctl_readwrite!(vmpl_set_page_vmpl, VMPL_IOCTL_MAGIC, 0x12, VmplArgs);
-ioctl_write_ptr!(vmpl_create_vcpu, VMPL_IOCTL_MAGIC, 0x20, VcpuConfig);
-ioctl_readwrite!(vmpl_vmpl_run, VMPL_IOCTL_MAGIC, 0x14, DuneConfig);
-ioctl_read!(vmpl_get_ghcb, VMPL_IOCTL_MAGIC, 0x15, u64);
-ioctl_read!(vmpl_get_cr3, VMPL_IOCTL_MAGIC, 0x16, u64);
-ioctl_readwrite!(vmpl_get_pages, VMPL_IOCTL_MAGIC, 0x17, GetPages);
-ioctl_readwrite!(vmpl_set_seimi, VMPL_IOCTL_MAGIC, 0x18, VmplSeimi);
-ioctl_write_ptr!(vmpl_set_config, VMPL_IOCTL_MAGIC, 0x21, VcpuConfig);
-ioctl_read!(vmpl_get_config, VMPL_IOCTL_MAGIC, 0x22, VcpuConfig);

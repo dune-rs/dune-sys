@@ -6,6 +6,8 @@ pub mod debug;
 #[macro_use]
 pub mod dune;
 #[macro_use]
+pub mod vmpl;
+#[macro_use]
 pub mod dev;
 #[macro_use]
 pub mod idt;
@@ -16,6 +18,7 @@ pub use crate::result::*;
 pub use crate::trap::*;
 pub use crate::debug::*;
 pub use crate::dune::*;
+pub use crate::vmpl::*;
 pub use crate::dev::*;
 pub use crate::idt::*;
 pub use crate::tss::*;
